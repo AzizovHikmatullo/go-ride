@@ -8,5 +8,5 @@ db:
   username: "postgres"
 
 jwt:
-  access_token_ttl: 15
-  refresh_token_ttl: 43200
+  access_token_ttl: 15m
+  refresh_token_ttl: 43200m

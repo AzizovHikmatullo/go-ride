@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/AzizovHikmatullo/go-ride/internal/auth"
+	"github.com/AzizovHikmatullo/go-ride/internal/middleware"
 	"github.com/AzizovHikmatullo/go-ride/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -30,7 +32,33 @@ func NewApp(cfg *config.Config, db *sqlx.DB) *App {
 	return app
 }
 
+func (a *App) InitRoutes() {
+	authRepo := auth.NewRepository(a.db, a.cfg.JWT.Secret, a.cfg.JWT.AccessTokenTTL, a.cfg.JWT.RefreshTokenTTL)
+
+	authService := auth.NewAuthService(authRepo)
+
+	authHandler := auth.NewAuthHandler(authService)
+
+	authRoutes := a.r.Group("/auth")
+	{
+		authRoutes.POST("/register", authHandler.Register)
+		authRoutes.POST("/login", authHandler.Login)
+		authRoutes.POST("/refresh", authHandler.RefreshToken)
+		authRoutes.POST("/logout", authHandler.Logout)
+	}
+
+	apiRoutes := a.r.Group("/api")
+	apiRoutes.Use(middleware.AuthMiddleware("DRIVER"))
+	{
+		apiRoutes.GET("/protected", func(c *gin.Context) {
+			c.JSON(200, gin.H{"message": "you have access!"})
+		})
+	}
+}
+
 func (a *App) Run() {
+	a.InitRoutes()
+
 	srv := &http.Server{
 		Addr:    ":" + a.cfg.Server.Port,
 		Handler: a.r,
@@ -55,6 +83,8 @@ func (a *App) Run() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
+
+	a.db.Close()
 
 	log.Println("Server exiting")
 }

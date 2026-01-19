@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/AzizovHikmatullo/go-ride/internal/server"
@@ -14,8 +13,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config: %s", err)
 	}
-
-	fmt.Println(cfg.Database.Host, cfg.Database.Password, cfg.Database.Port, cfg.Database.User)
 
 	db, err := db.Connect(cfg)
 	if err != nil {

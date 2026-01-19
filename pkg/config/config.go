@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -23,8 +24,8 @@ type Config struct {
 
 	JWT struct {
 		Secret          string
-		AccessTokenTTL  int `mapstructure:"access_token_ttl"`
-		RefreshTokenTTL int `mapstructure:"refresh_token_ttl"`
+		AccessTokenTTL  time.Duration `mapstructure:"access_token_ttl"`
+		RefreshTokenTTL time.Duration `mapstructure:"refresh_token_ttl"`
 	} `mapstructure:"jwt"`
 }
 
