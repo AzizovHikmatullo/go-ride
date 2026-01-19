@@ -33,9 +33,9 @@ func NewApp(cfg *config.Config, db *sqlx.DB) *App {
 }
 
 func (a *App) InitRoutes() {
-	authRepo := auth.NewRepository(a.db, a.cfg.JWT.Secret, a.cfg.JWT.AccessTokenTTL, a.cfg.JWT.RefreshTokenTTL)
+	authRepo := auth.NewRepository(a.db)
 
-	authService := auth.NewAuthService(authRepo)
+	authService := auth.NewAuthService(authRepo, a.cfg.JWT.Secret, a.cfg.JWT.AccessTokenTTL, a.cfg.JWT.RefreshTokenTTL)
 
 	authHandler := auth.NewAuthHandler(authService)
 
@@ -51,7 +51,7 @@ func (a *App) InitRoutes() {
 	apiRoutes.Use(middleware.AuthMiddleware("DRIVER"))
 	{
 		apiRoutes.GET("/protected", func(c *gin.Context) {
-			c.JSON(200, gin.H{"message": "you have access!"})
+			c.JSON(http.StatusOK, gin.H{"message": "you have access!"})
 		})
 	}
 }

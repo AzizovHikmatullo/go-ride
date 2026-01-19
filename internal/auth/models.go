@@ -8,11 +8,6 @@ type User struct {
 	Role     string `json:"role" db:"role"`
 }
 
-type TokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 type IDResponse struct {
 	ID int `json:"id"`
 }
@@ -30,6 +25,11 @@ type LoginReqBody struct {
 }
 
 type LogoutReqBody struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type TokenResponse struct {
+	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
 
