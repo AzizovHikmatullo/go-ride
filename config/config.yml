@@ -1,0 +1,12 @@
+server:
+  port: "8080"
+
+db:
+  host: "localhost"
+  port: "5438"
+  dbname: "postgres"
+  username: "postgres"
+
+jwt:
+  access_token_ttl: 15
+  refresh_token_ttl: 43200
