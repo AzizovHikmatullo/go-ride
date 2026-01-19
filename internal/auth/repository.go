@@ -26,7 +26,7 @@ func (pr *postgresRepo) CreateUser(ctx context.Context, user *User, passwordHash
 	return id, nil
 }
 
-func (pr *postgresRepo) LogoutUser(ctx context.Context, refreshToken string) error {
+func (pr *postgresRepo) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
 	_, err := pr.db.ExecContext(ctx, "DELETE from refresh_tokens WHERE token = $1", refreshToken)
 	if err != nil {
 		return fmt.Errorf("failed to delete refresh tokens: %w", err)
