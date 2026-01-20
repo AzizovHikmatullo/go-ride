@@ -52,6 +52,10 @@ type ChangeRideResponse struct {
 	Status string `json:"status" db:"status"`
 }
 
+type SearchRidesResponse struct {
+	Rides []Ride `json:"rides" db:"ride"`
+}
+
 type ErrorResponse struct {
 	Message string `json:"message"`
 }

@@ -20,7 +20,7 @@ type RideServiceInterface interface {
 	TakeRide(ctx context.Context, rideID int, driverID int) (*ChangeRideResponse, *ErrorResponse)
 	CompleteRide(ctx context.Context, rideID int) (*ChangeRideResponse, *ErrorResponse)
 	CancelRide(ctx context.Context, rideID int) (*ChangeRideResponse, *ErrorResponse)
-	GetSearchingRides(ctx context.Context) ([]Ride, *ErrorResponse)
+	GetSearchingRides(ctx context.Context) (*SearchRidesResponse, *ErrorResponse)
 	CheckAccess(rideID, userID int, role string) error
 }
 
@@ -142,7 +142,7 @@ func (rh *RideHandler) CompleteRide(c *gin.Context) {
 		return
 	}
 
-	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), userRole)
+	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), driverRole)
 	if errResp != nil {
 		newErrorResponse(c, http.StatusForbidden, errResp.Error())
 		return

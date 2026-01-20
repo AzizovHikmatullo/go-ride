@@ -149,7 +149,7 @@ func (pr *postgresRepo) CancelRide(ctx context.Context, rideID int) (*ChangeRide
 	return NewChangeRideResponse(rideID, canceledStatus), nil
 }
 
-func (pr *postgresRepo) GetSearchingRides(ctx context.Context) ([]Ride, error) {
+func (pr *postgresRepo) GetSearchingRides(ctx context.Context) (*SearchRidesResponse, error) {
 	var rides []Ride
 
 	err := pr.db.SelectContext(ctx, &rides, "SELECT * FROM rides WHERE status = $1", searchingStatus)
@@ -160,5 +160,9 @@ func (pr *postgresRepo) GetSearchingRides(ctx context.Context) ([]Ride, error) {
 		return nil, fmt.Errorf("failed to get rides: %w", err)
 	}
 
-	return rides, nil
+	rideList := &SearchRidesResponse{
+		Rides: rides,
+	}
+
+	return rideList, nil
 }

@@ -16,7 +16,7 @@ type RepositoryInterface interface {
 	TakeRide(ctx context.Context, rideID int, driverID int) (*ChangeRideResponse, error)
 	CompleteRide(ctx context.Context, rideID int) (*ChangeRideResponse, error)
 	CancelRide(ctx context.Context, rideID int) (*ChangeRideResponse, error)
-	GetSearchingRides(ctx context.Context) ([]Ride, error)
+	GetSearchingRides(ctx context.Context) (*SearchRidesResponse, error)
 }
 
 type RideService struct {
@@ -124,7 +124,7 @@ func (rs *RideService) CancelRide(ctx context.Context, rideID int) (*ChangeRideR
 	return response, nil
 }
 
-func (rs *RideService) GetSearchingRides(ctx context.Context) ([]Ride, *ErrorResponse) {
+func (rs *RideService) GetSearchingRides(ctx context.Context) (*SearchRidesResponse, *ErrorResponse) {
 	rides, err := rs.repo.GetSearchingRides(ctx)
 	if err != nil {
 		return nil, NewErrorResponse(err)
@@ -135,14 +135,14 @@ func (rs *RideService) GetSearchingRides(ctx context.Context) ([]Ride, *ErrorRes
 func (s *RideService) CheckAccess(rideID, userID int, role string) error {
 	ride, errResp := s.GetRideByID(context.Background(), rideID)
 	if errResp != nil {
-		return fmt.Errorf("failed to get ride: %w", errResp.Message)
+		return fmt.Errorf("failed to get ride: %s", errResp.Message)
 	}
 
-	if role == "user" && ride.UserID != userID {
+	if role == "USER" && ride.UserID != userID {
 		return fmt.Errorf("this ride does not belong to you")
 	}
 
-	if role == "driver" && ride.DriverID != nil && *ride.DriverID != userID {
+	if role == "DRIVER" && ride.DriverID != nil && *ride.DriverID != userID {
 		return fmt.Errorf("you are not assigned to this ride")
 	}
 

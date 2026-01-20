@@ -56,19 +56,23 @@ func (a *App) InitRoutes() {
 	}
 
 	userRoutes := a.r.Group("/rides")
-	userRoutes.Use(middleware.RequireRole("USER"))
+	userRoutes.Use(middleware.AuthMiddleware(), middleware.RequireRole("USER"))
 	{
 		userRoutes.POST("", ridesHandler.CreateRide)
 		userRoutes.GET("/:id", ridesHandler.GetRideByID)
 		userRoutes.GET("/:id/status", ridesHandler.GetRideStatus)
 		userRoutes.POST("/:id/cancel", ridesHandler.CancelRide)
-
-		userRoutes.POST("/search", ridesHandler.GetSearchingRides).Use(middleware.RequireRole("DRIVER"))
-		userRoutes.POST("/:id/take", ridesHandler.TakeRide).Use(middleware.RequireRole("DRIVER"))
-		userRoutes.POST("/:id/complete", ridesHandler.CompleteRide).Use(middleware.RequireRole("DRIVER"))
 	}
 
-	a.logger.Info("all routes created")
+	driverRoutes := a.r.Group("/rides")
+	driverRoutes.Use(middleware.AuthMiddleware(), middleware.RequireRole("DRIVER"))
+	{
+		driverRoutes.POST("/search", ridesHandler.GetSearchingRides)
+		driverRoutes.POST("/:id/take", ridesHandler.TakeRide)
+		driverRoutes.POST("/:id/complete", ridesHandler.CompleteRide)
+	}
+
+	a.logger.Info("All routes created")
 }
 
 func (a *App) Run() {
