@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/AzizovHikmatullo/go-ride/pkg/config"
+	"github.com/AzizovHikmatullo/go-ride/internal/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )

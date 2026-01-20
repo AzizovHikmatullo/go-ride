@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,27 +19,31 @@ import (
 )
 
 type App struct {
-	cfg *config.Config
-	db  *sqlx.DB
-	r   *gin.Engine
+	cfg    *config.Config
+	logger *slog.Logger
+	db     *sqlx.DB
+	r      *gin.Engine
 }
 
-func NewApp(cfg *config.Config, db *sqlx.DB) *App {
+func NewApp(cfg *config.Config, db *sqlx.DB, logger *slog.Logger) *App {
 	app := &App{
-		cfg: cfg,
-		db:  db,
-		r:   gin.Default(),
+		cfg:    cfg,
+		logger: logger,
+		db:     db,
+		r:      gin.Default(),
 	}
 
 	return app
 }
 
 func (a *App) InitRoutes() {
-	authRepo := auth.NewRepository(a.db)
-	ridesRepo := rides.NewRepository(a.db)
+	a.r.Use(middleware.LoggerMiddleware(a.logger))
 
-	authService := auth.NewAuthService(authRepo, a.cfg.JWT.Secret, a.cfg.JWT.AccessTokenTTL, a.cfg.JWT.RefreshTokenTTL)
-	ridesService := rides.NewRideService(ridesRepo)
+	authRepo := auth.NewRepository(a.db, a.logger)
+	ridesRepo := rides.NewRepository(a.db, a.logger)
+
+	authService := auth.NewAuthService(authRepo, a.cfg.JWT.Secret, a.cfg.JWT.AccessTokenTTL, a.cfg.JWT.RefreshTokenTTL, a.logger)
+	ridesService := rides.NewRideService(ridesRepo, a.logger)
 
 	authHandler := auth.NewAuthHandler(authService)
 	ridesHandler := rides.NewRideHandler(ridesService)

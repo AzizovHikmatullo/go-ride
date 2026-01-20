@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 )
 
@@ -19,17 +20,25 @@ type RepositoryInterface interface {
 }
 
 type RideService struct {
-	repo RepositoryInterface
+	repo   RepositoryInterface
+	logger *slog.Logger
 }
 
-func NewRideService(repository RepositoryInterface) RideServiceInterface {
+func NewRideService(repository RepositoryInterface, logger *slog.Logger) RideServiceInterface {
 	return &RideService{
-		repo: repository,
+		repo:   repository,
+		logger: logger,
 	}
 }
 
 func (rs *RideService) CreateRide(ctx context.Context, userID int, start, end PointGeoJSON) (*CreateResponse, *ErrorResponse) {
 	route, err := fetchRideFromAPI(ctx, start, end)
+	if err != nil {
+		rs.logger.Error("failed to fetch route from API",
+			slog.String("error", err.Error()),
+		)
+		return nil, NewErrorResponse(err)
+	}
 
 	routeJSON, err := json.Marshal(route)
 	if err != nil {
@@ -50,6 +59,12 @@ func (rs *RideService) CreateRide(ctx context.Context, userID int, start, end Po
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	rs.logger.Info("ride created",
+		slog.Int("user_id", userID),
+		slog.Int("ride_id", response.ID),
+	)
+
 	return response, nil
 }
 
@@ -74,6 +89,12 @@ func (rs *RideService) TakeRide(ctx context.Context, rideID int, driverID int) (
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	rs.logger.Info("driver took ride",
+		slog.Int("ride_id", rideID),
+		slog.Int("driver_id", driverID),
+	)
+
 	return response, nil
 }
 
@@ -82,6 +103,11 @@ func (rs *RideService) CompleteRide(ctx context.Context, rideID int) (*ChangeRid
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	rs.logger.Info("driver completed ride",
+		slog.Int("ride_id", rideID),
+	)
+
 	return response, nil
 }
 
@@ -90,6 +116,11 @@ func (rs *RideService) CancelRide(ctx context.Context, rideID int) (*ChangeRideR
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	rs.logger.Info("user canceled ride",
+		slog.Int("ride_id", rideID),
+	)
+
 	return response, nil
 }
 
@@ -99,6 +130,23 @@ func (rs *RideService) GetSearchingRides(ctx context.Context) ([]Ride, *ErrorRes
 		return nil, NewErrorResponse(err)
 	}
 	return rides, nil
+}
+
+func (s *RideService) CheckAccess(rideID, userID int, role string) error {
+	ride, errResp := s.GetRideByID(context.Background(), rideID)
+	if errResp != nil {
+		return fmt.Errorf("failed to get ride: %w", errResp.Message)
+	}
+
+	if role == "user" && ride.UserID != userID {
+		return fmt.Errorf("this ride does not belong to you")
+	}
+
+	if role == "driver" && ride.DriverID != nil && *ride.DriverID != userID {
+		return fmt.Errorf("you are not assigned to this ride")
+	}
+
+	return nil
 }
 
 func fetchRideFromAPI(ctx context.Context, start, end PointGeoJSON) (*Geometry, error) {
@@ -142,21 +190,4 @@ func fetchRideFromAPI(ctx context.Context, start, end PointGeoJSON) (*Geometry, 
 	}
 
 	return &apiResp.Routes[0].Geometry, nil
-}
-
-func (s *RideService) CheckAccess(rideID, userID int, role string) error {
-	ride, errResp := s.GetRideByID(context.Background(), rideID)
-	if errResp != nil {
-		return fmt.Errorf("failed to get ride: %w", errResp.Message)
-	}
-
-	if role == "user" && ride.UserID != userID {
-		return fmt.Errorf("this ride does not belong to you")
-	}
-
-	if role == "driver" && ride.DriverID != nil && *ride.DriverID != userID {
-		return fmt.Errorf("you are not assigned to this ride")
-	}
-
-	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -25,14 +26,16 @@ type AuthService struct {
 	jwtSecret       string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
+	logger          *slog.Logger
 }
 
-func NewAuthService(repository RepositoryInterface, jwtSecret string, accessTokenTTL, refreshTokenTTL time.Duration) AuthServiceInterface {
+func NewAuthService(repository RepositoryInterface, jwtSecret string, accessTokenTTL, refreshTokenTTL time.Duration, logger *slog.Logger) AuthServiceInterface {
 	return &AuthService{
 		repo:            repository,
 		jwtSecret:       jwtSecret,
 		AccessTokenTTL:  accessTokenTTL,
 		RefreshTokenTTL: refreshTokenTTL,
+		logger:          logger,
 	}
 }
 
@@ -48,6 +51,11 @@ func (as *AuthService) CreateUser(ctx context.Context, body *RegisterReqBody) (*
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	as.logger.Info("user created",
+		slog.Int("user_id", id),
+	)
+
 	return &IDResponse{id}, nil
 }
 
@@ -56,6 +64,9 @@ func (as *AuthService) LogoutUser(ctx context.Context, refreshToken string) (*St
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	as.logger.Info("user loged out")
+
 	return NewStatusResponse("loged out"), nil
 }
 
@@ -76,6 +87,10 @@ func (as *AuthService) LoginUser(ctx context.Context, body *LoginReqBody) (*Toke
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	as.logger.Info("user loged in",
+		slog.String("user_email", body.Email),
+	)
 
 	return &TokenResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
@@ -105,6 +120,10 @@ func (as *AuthService) GenerateTokens(ctx context.Context, userID int, oldRefres
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
+
+	as.logger.Info("generated new tokens",
+		slog.Int("user_id", userID),
+	)
 
 	return &TokenResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
