@@ -143,3 +143,20 @@ func fetchRideFromAPI(ctx context.Context, start, end PointGeoJSON) (*Geometry, 
 
 	return &apiResp.Routes[0].Geometry, nil
 }
+
+func (s *RideService) CheckAccess(rideID, userID int, role string) error {
+	ride, errResp := s.GetRideByID(context.Background(), rideID)
+	if errResp != nil {
+		return fmt.Errorf("failed to get ride: %w", errResp.Message)
+	}
+
+	if role == "user" && ride.UserID != userID {
+		return fmt.Errorf("this ride does not belong to you")
+	}
+
+	if role == "driver" && ride.DriverID != nil && *ride.DriverID != userID {
+		return fmt.Errorf("you are not assigned to this ride")
+	}
+
+	return nil
+}

@@ -8,6 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	userRole   = "USER"
+	driverRole = "DRIVER"
+)
+
 type RideServiceInterface interface {
 	CreateRide(ctx context.Context, userID int, start, end PointGeoJSON) (*CreateResponse, *ErrorResponse)
 	GetRideByID(ctx context.Context, rideID int) (*Ride, *ErrorResponse)
@@ -16,6 +21,7 @@ type RideServiceInterface interface {
 	CompleteRide(ctx context.Context, rideID int) (*ChangeRideResponse, *ErrorResponse)
 	CancelRide(ctx context.Context, rideID int) (*ChangeRideResponse, *ErrorResponse)
 	GetSearchingRides(ctx context.Context) ([]Ride, *ErrorResponse)
+	CheckAccess(rideID, userID int, role string) error
 }
 
 type RideHandler struct {
@@ -52,13 +58,19 @@ func (rh *RideHandler) GetRideByID(c *gin.Context) {
 		return
 	}
 
-	idInt, convertErr := strconv.Atoi(id)
+	rideID, convertErr := strconv.Atoi(id)
 	if convertErr != nil {
 		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
 		return
 	}
 
-	ride, err := rh.service.GetRideByID(c, idInt)
+	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), userRole)
+	if errResp != nil {
+		newErrorResponse(c, http.StatusForbidden, errResp.Error())
+		return
+	}
+
+	ride, err := rh.service.GetRideByID(c, rideID)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Message)
 		return
@@ -73,19 +85,25 @@ func (rh *RideHandler) GetRideStatus(c *gin.Context) {
 		return
 	}
 
-	idInt, convertErr := strconv.Atoi(id)
+	rideID, convertErr := strconv.Atoi(id)
 	if convertErr != nil {
 		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
 		return
 	}
 
-	status, err := rh.service.GetRideStatus(c, idInt)
+	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), userRole)
+	if errResp != nil {
+		newErrorResponse(c, http.StatusForbidden, errResp.Error())
+		return
+	}
+
+	status, err := rh.service.GetRideStatus(c, rideID)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Message)
 		return
 	}
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"order_id": idInt,
+		"order_id": rideID,
 		"status":   status,
 	})
 }
@@ -118,13 +136,19 @@ func (rh *RideHandler) CompleteRide(c *gin.Context) {
 		return
 	}
 
-	idInt, convertErr := strconv.Atoi(id)
+	rideID, convertErr := strconv.Atoi(id)
 	if convertErr != nil {
 		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
 		return
 	}
 
-	response, err := rh.service.CompleteRide(c, idInt)
+	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), userRole)
+	if errResp != nil {
+		newErrorResponse(c, http.StatusForbidden, errResp.Error())
+		return
+	}
+
+	response, err := rh.service.CompleteRide(c, rideID)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Message)
 		return
@@ -139,13 +163,19 @@ func (rh *RideHandler) CancelRide(c *gin.Context) {
 		return
 	}
 
-	idInt, convertErr := strconv.Atoi(id)
+	rideID, convertErr := strconv.Atoi(id)
 	if convertErr != nil {
 		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
 		return
 	}
 
-	response, err := rh.service.CancelRide(c, idInt)
+	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), userRole)
+	if errResp != nil {
+		newErrorResponse(c, http.StatusForbidden, errResp.Error())
+		return
+	}
+
+	response, err := rh.service.CancelRide(c, rideID)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Message)
 		return
