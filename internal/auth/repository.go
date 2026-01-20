@@ -61,7 +61,7 @@ func (pr *postgresRepo) GetUserRoleByID(ctx context.Context, userID int) (string
 func (pr *postgresRepo) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	user := &User{}
 
-	err := pr.db.QueryRowContext(ctx, "SELECT id, name, password_hash, role FROM users WHERE email = $1", email).Scan(&user)
+	err := pr.db.QueryRowContext(ctx, "SELECT id, name, password_hash, role FROM users WHERE email = $1", email).Scan(&user.ID, &user.Name, &user.Password, &user.Role)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")

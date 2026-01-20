@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,7 +29,10 @@ type AuthService struct {
 
 func NewAuthService(repository RepositoryInterface, jwtSecret string, accessTokenTTL, refreshTokenTTL time.Duration) AuthServiceInterface {
 	return &AuthService{
-		repo: repository,
+		repo:            repository,
+		jwtSecret:       jwtSecret,
+		AccessTokenTTL:  accessTokenTTL,
+		RefreshTokenTTL: refreshTokenTTL,
 	}
 }
 
@@ -66,7 +69,7 @@ func (as *AuthService) LoginUser(ctx context.Context, body *LoginReqBody) (*Toke
 		return nil, NewErrorResponse(fmt.Errorf("invalid credentials"))
 	}
 
-	accessToken, _ := getAccessToken(user.ID, user.Role, as.jwtSecret, time.Now().Add(as.AccessTokenTTL).Unix())
+	accessToken, _ := getAccessToken(user.ID, user.Role, as.jwtSecret, time.Now().Add(as.AccessTokenTTL))
 	refreshToken, _ := getRefreshToken()
 
 	err = as.repo.SaveRefreshToken(ctx, user.ID, refreshToken, time.Now().Add(as.RefreshTokenTTL))
@@ -88,7 +91,7 @@ func (as *AuthService) GenerateTokens(ctx context.Context, userID int, oldRefres
 		return nil, NewErrorResponse(err)
 	}
 
-	accessToken, err := getAccessToken(userID, role, as.jwtSecret, time.Now().Add(as.AccessTokenTTL).Unix())
+	accessToken, err := getAccessToken(userID, role, as.jwtSecret, time.Now().Add(as.AccessTokenTTL))
 	if err != nil {
 		return nil, NewErrorResponse(err)
 	}
@@ -114,12 +117,22 @@ func (as *AuthService) GetUserIDByRefreshToken(ctx context.Context, refreshToken
 	return userID, nil
 }
 
-func getAccessToken(userID int, role string, secret string, expireTime int64) (string, error) {
-	claims := jwt.MapClaims{
-		"userID": userID,
-		"role":   role,
-		"exp":    expireTime,
+type Claims struct {
+	UserID int    `json:"userID"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+func getAccessToken(userID int, role string, secret string, expireTime time.Time) (string, error) {
+	claims := &Claims{
+		UserID: userID,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expireTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	signedToken, err := token.SignedString([]byte(secret))
