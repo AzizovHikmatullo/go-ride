@@ -11,6 +11,7 @@ import (
 
 	"github.com/AzizovHikmatullo/go-ride/internal/auth"
 	"github.com/AzizovHikmatullo/go-ride/internal/middleware"
+	"github.com/AzizovHikmatullo/go-ride/internal/rides"
 	"github.com/AzizovHikmatullo/go-ride/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -34,10 +35,13 @@ func NewApp(cfg *config.Config, db *sqlx.DB) *App {
 
 func (a *App) InitRoutes() {
 	authRepo := auth.NewRepository(a.db)
+	ridesRepo := rides.NewRepository(a.db)
 
 	authService := auth.NewAuthService(authRepo, a.cfg.JWT.Secret, a.cfg.JWT.AccessTokenTTL, a.cfg.JWT.RefreshTokenTTL)
+	ridesService := rides.NewRideService(ridesRepo)
 
 	authHandler := auth.NewAuthHandler(authService)
+	ridesHandler := rides.NewRideHandler(ridesService)
 
 	authRoutes := a.r.Group("/auth")
 	{
@@ -47,12 +51,17 @@ func (a *App) InitRoutes() {
 		authRoutes.POST("/logout", authHandler.Logout)
 	}
 
-	apiRoutes := a.r.Group("/api")
-	apiRoutes.Use(middleware.AuthMiddleware("DRIVER"))
+	userRoutes := a.r.Group("/rides")
+	userRoutes.Use(middleware.RequireRole("USER"))
 	{
-		apiRoutes.GET("/protected", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "you have access!"})
-		})
+		userRoutes.POST("", ridesHandler.CreateRide)
+		userRoutes.GET("/:id", ridesHandler.GetRideByID)
+		userRoutes.GET("/:id/status", ridesHandler.GetRideStatus)
+		userRoutes.POST("/:id/cancel", ridesHandler.CancelRide)
+
+		userRoutes.POST("/search", ridesHandler.GetSearchingRides).Use(middleware.RequireRole("DRIVER"))
+		userRoutes.POST("/:id/take", ridesHandler.TakeRide).Use(middleware.RequireRole("DRIVER"))
+		userRoutes.POST("/:id/complete", ridesHandler.CompleteRide).Use(middleware.RequireRole("DRIVER"))
 	}
 }
 
