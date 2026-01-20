@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/AzizovHikmatullo/go-ride/internal/auth"
+	"github.com/AzizovHikmatullo/go-ride/internal/config"
 	"github.com/AzizovHikmatullo/go-ride/internal/middleware"
 	"github.com/AzizovHikmatullo/go-ride/internal/rides"
-	"github.com/AzizovHikmatullo/go-ride/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 )
