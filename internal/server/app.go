@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -30,7 +29,7 @@ func NewApp(cfg *config.Config, db *sqlx.DB, logger *slog.Logger) *App {
 		cfg:    cfg,
 		logger: logger,
 		db:     db,
-		r:      gin.Default(),
+		r:      gin.New(),
 	}
 
 	return app
@@ -68,6 +67,8 @@ func (a *App) InitRoutes() {
 		userRoutes.POST("/:id/take", ridesHandler.TakeRide).Use(middleware.RequireRole("DRIVER"))
 		userRoutes.POST("/:id/complete", ridesHandler.CompleteRide).Use(middleware.RequireRole("DRIVER"))
 	}
+
+	a.logger.Info("all routes created")
 }
 
 func (a *App) Run() {
@@ -79,9 +80,10 @@ func (a *App) Run() {
 	}
 
 	go func() {
-		log.Printf("Server running on port %s", a.cfg.Server.Port)
+		a.logger.Info("Running server", slog.String("port", a.cfg.Server.Port))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
+			a.logger.Info("Failed to run server", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 	}()
 
@@ -90,15 +92,16 @@ func (a *App) Run() {
 
 	<-quit
 
-	log.Println("Shutting down server...")
+	a.logger.Info("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		a.logger.Info("Server forced to shutdown", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	a.db.Close()
 
-	log.Println("Server exiting")
+	a.logger.Info("Server exiting. Goodbye!")
 }
