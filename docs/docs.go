@@ -238,7 +238,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/rides/searching": {
+        "/rides/search": {
             "get": {
                 "security": [
                     {

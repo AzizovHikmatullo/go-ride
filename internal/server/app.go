@@ -108,21 +108,17 @@ func (a *App) InitRoutes() {
 		authRoutes.POST("/logout", authHandler.Logout)
 	}
 
-	userRoutes := a.r.Group("/rides")
-	userRoutes.Use(middleware.AuthMiddleware(), middleware.RequireRole("USER"))
+	ridesGroup := a.r.Group("/rides")
+	ridesGroup.Use(middleware.AuthMiddleware())
 	{
-		userRoutes.POST("", ridesHandler.CreateRide)
-		userRoutes.GET("/:id", ridesHandler.GetRideByID)
-		userRoutes.GET("/:id/status", ridesHandler.GetRideStatus)
-		userRoutes.POST("/:id/cancel", ridesHandler.CancelRide)
-	}
+		ridesGroup.GET("/search", middleware.RequireRole("DRIVER"), ridesHandler.GetSearchingRides)
+		ridesGroup.POST("/:id/take", middleware.RequireRole("DRIVER"), ridesHandler.TakeRide)
+		ridesGroup.POST("/:id/complete", middleware.RequireRole("DRIVER"), ridesHandler.CompleteRide)
 
-	driverRoutes := a.r.Group("/rides")
-	driverRoutes.Use(middleware.AuthMiddleware(), middleware.RequireRole("DRIVER"))
-	{
-		driverRoutes.POST("/search", ridesHandler.GetSearchingRides)
-		driverRoutes.POST("/:id/take", ridesHandler.TakeRide)
-		driverRoutes.POST("/:id/complete", ridesHandler.CompleteRide)
+		ridesGroup.POST("", middleware.RequireRole("USER"), ridesHandler.CreateRide)
+		ridesGroup.GET("/:id", middleware.RequireRole("USER"), ridesHandler.GetRideByID)
+		ridesGroup.GET("/:id/status", middleware.RequireRole("USER"), ridesHandler.GetRideStatus)
+		ridesGroup.POST("/:id/cancel", middleware.RequireRole("USER"), ridesHandler.CancelRide)
 	}
 
 	a.r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

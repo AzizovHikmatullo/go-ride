@@ -427,7 +427,7 @@ paths:
       summary: Take a ride
       tags:
       - rides
-  /rides/searching:
+  /rides/search:
     get:
       description: Get all rides with status "searching"
       produces:

@@ -232,7 +232,7 @@
                 }
             }
         },
-        "/rides/searching": {
+        "/rides/search": {
             "get": {
                 "security": [
                     {

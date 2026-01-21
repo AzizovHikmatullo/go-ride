@@ -255,7 +255,7 @@ func (rh *RideHandler) CompleteRide(c *gin.Context) {
 // @Success      200  {object}  SearchRidesResponseSwagger
 // @Failure      500  {object}  ErrorResponse
 // @Security     DriverAuth
-// @Router       /rides/searching [get]
+// @Router       /rides/search [get]
 func (rh *RideHandler) GetSearchingRides(c *gin.Context) {
 	rides, err := rh.service.GetSearchingRides(c)
 	if err != nil {
