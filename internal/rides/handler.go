@@ -34,6 +34,17 @@ func NewRideHandler(service RideServiceInterface) *RideHandler {
 	}
 }
 
+// @Summary      Create a new ride
+// @Description  Create a new ride with start and end points
+// @Tags         rides
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateRequest  true  "Ride start/end points"
+// @Success      200   {object}  CreateResponseSwagger
+// @Failure      400   {object}  ErrorResponse
+// @Failure      500   {object}  ErrorResponse
+// @Security     UserAuth
+// @Router       /rides [post]
 func (rh *RideHandler) CreateRide(c *gin.Context) {
 	var body CreateRequest
 
@@ -51,6 +62,17 @@ func (rh *RideHandler) CreateRide(c *gin.Context) {
 
 }
 
+// @Summary      Get ride by ID
+// @Description  Get ride information by ID
+// @Tags         rides
+// @Produce      json
+// @Param        id   path      int  true  "Ride ID"
+// @Success      200  {object}  RideSwagger
+// @Failure      400  {object}  ErrorResponse
+// @Failure      403  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     UserAuth
+// @Router       /rides/{id} [get]
 func (rh *RideHandler) GetRideByID(c *gin.Context) {
 	id, ok := c.Params.Get("id")
 	if !ok {
@@ -78,6 +100,17 @@ func (rh *RideHandler) GetRideByID(c *gin.Context) {
 	c.JSON(http.StatusOK, ride)
 }
 
+// @Summary      Get ride status
+// @Description  Get current status of a ride
+// @Tags         rides
+// @Produce      json
+// @Param        id   path      int  true  "Ride ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  ErrorResponse
+// @Failure      403  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     UserAuth
+// @Router       /rides/{id}/status [get]
 func (rh *RideHandler) GetRideStatus(c *gin.Context) {
 	id, ok := c.Params.Get("id")
 	if !ok {
@@ -108,54 +141,17 @@ func (rh *RideHandler) GetRideStatus(c *gin.Context) {
 	})
 }
 
-func (rh *RideHandler) TakeRide(c *gin.Context) {
-	id, ok := c.Params.Get("id")
-	if !ok {
-		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
-		return
-	}
-
-	idInt, convertErr := strconv.Atoi(id)
-	if convertErr != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
-		return
-	}
-
-	response, err := rh.service.TakeRide(c, idInt, c.GetInt("userID"))
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Message)
-		return
-	}
-	c.JSON(http.StatusOK, response)
-}
-
-func (rh *RideHandler) CompleteRide(c *gin.Context) {
-	id, ok := c.Params.Get("id")
-	if !ok {
-		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
-		return
-	}
-
-	rideID, convertErr := strconv.Atoi(id)
-	if convertErr != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
-		return
-	}
-
-	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), driverRole)
-	if errResp != nil {
-		newErrorResponse(c, http.StatusForbidden, errResp.Error())
-		return
-	}
-
-	response, err := rh.service.CompleteRide(c, rideID)
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Message)
-		return
-	}
-	c.JSON(http.StatusOK, response)
-}
-
+// @Summary      Cancel a ride
+// @Description  Cancel a ride
+// @Tags         rides
+// @Produce      json
+// @Param        id   path      int  true  "Ride ID"
+// @Success      200  {object}  ChangeRideResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      403  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     UserAuth
+// @Router       /rides/{id}/cancel [post]
 func (rh *RideHandler) CancelRide(c *gin.Context) {
 	id, ok := c.Params.Get("id")
 	if !ok {
@@ -183,6 +179,83 @@ func (rh *RideHandler) CancelRide(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// @Summary      Take a ride
+// @Description  Driver takes a ride
+// @Tags         rides
+// @Produce      json
+// @Param        id   path      int  true  "Ride ID"
+// @Success      200  {object}  ChangeRideResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     DriverAuth
+// @Router       /rides/{id}/take [post]
+func (rh *RideHandler) TakeRide(c *gin.Context) {
+	id, ok := c.Params.Get("id")
+	if !ok {
+		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
+		return
+	}
+
+	idInt, convertErr := strconv.Atoi(id)
+	if convertErr != nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
+		return
+	}
+
+	response, err := rh.service.TakeRide(c, idInt, c.GetInt("userID"))
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Message)
+		return
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+// @Summary      Complete a ride
+// @Description  Driver comptete a ride
+// @Tags         rides
+// @Produce      json
+// @Param        id   path      int  true  "Ride ID"
+// @Success      200  {object}  ChangeRideResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      403  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     DriverAuth
+// @Router       /rides/{id}/complete [post]
+func (rh *RideHandler) CompleteRide(c *gin.Context) {
+	id, ok := c.Params.Get("id")
+	if !ok {
+		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
+		return
+	}
+
+	rideID, convertErr := strconv.Atoi(id)
+	if convertErr != nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid ride ID")
+		return
+	}
+
+	errResp := rh.service.CheckAccess(rideID, c.GetInt("userID"), driverRole)
+	if errResp != nil {
+		newErrorResponse(c, http.StatusForbidden, errResp.Error())
+		return
+	}
+
+	response, err := rh.service.CompleteRide(c, rideID)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Message)
+		return
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+// @Summary      Get searching rides
+// @Description  Get all rides with status "searching"
+// @Tags         rides
+// @Produce      json
+// @Success      200  {object}  SearchRidesResponseSwagger
+// @Failure      500  {object}  ErrorResponse
+// @Security     DriverAuth
+// @Router       /rides/searching [get]
 func (rh *RideHandler) GetSearchingRides(c *gin.Context) {
 	rides, err := rh.service.GetSearchingRides(c)
 	if err != nil {

@@ -25,6 +25,16 @@ func NewAuthHandler(service AuthServiceInterface) *AuthHandler {
 	}
 }
 
+// @Summary      Register new user
+// @Description  Create a new user account
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      RegisterReqBody  true  "User registration info"
+// @Success      200   {object}  IDResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      500   {object}  ErrorResponse
+// @Router       /auth/register [post]
 func (ah *AuthHandler) Register(c *gin.Context) {
 	var body RegisterReqBody
 
@@ -42,6 +52,16 @@ func (ah *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusOK, id)
 }
 
+// @Summary      Login user
+// @Description  Authenticate user and return access + refresh tokens
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      LoginReqBody  true  "Login credentials"
+// @Success      200   {object}  TokenResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      500   {object}  ErrorResponse
+// @Router       /auth/login [post]
 func (ah *AuthHandler) Login(c *gin.Context) {
 	var body LoginReqBody
 
@@ -59,6 +79,15 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, tokens)
 }
 
+// @Summary      Logout user
+// @Description  Delete refresh token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      LogoutReqBody  true  "Refresh token"
+// @Success      200   {object}  StatusResponse
+// @Failure      400   {object}  ErrorResponse
+// @Router       /auth/logout [post]
 func (ah *AuthHandler) Logout(c *gin.Context) {
 	var body LogoutReqBody
 
@@ -75,6 +104,15 @@ func (ah *AuthHandler) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, status)
 }
 
+// @Summary      Refresh JWT tokens
+// @Description  Generate new tokens
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      LogoutReqBody  true  "Old refresh token"
+// @Success  	 200   {object}  TokenResponse
+// @Failure      401   {object}  ErrorResponse
+// @Router       /auth/refresh [post]
 func (ah *AuthHandler) RefreshToken(c *gin.Context) {
 	var body LogoutReqBody
 

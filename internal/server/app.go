@@ -15,6 +15,10 @@ import (
 	"github.com/AzizovHikmatullo/go-ride/internal/rides"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+
+	_ "github.com/AzizovHikmatullo/go-ride/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type App struct {
@@ -33,6 +37,55 @@ func NewApp(cfg *config.Config, db *sqlx.DB, logger *slog.Logger) *App {
 	}
 
 	return app
+}
+
+// @title Go-Ride API
+// @version 1.0
+// @description API Server for Go-Ride
+
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey UserAuth
+// @in header
+// @name Authorization
+
+// @securityDefinitions.apikey DriverAuth
+// @in header
+// @name Authorization
+func (a *App) Run() {
+	a.InitRoutes()
+
+	srv := &http.Server{
+		Addr:    ":" + a.cfg.Server.Port,
+		Handler: a.r,
+	}
+
+	go func() {
+		a.logger.Info("Running server", slog.String("port", a.cfg.Server.Port))
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			a.logger.Info("Failed to run server", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+
+	a.logger.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		a.logger.Info("Server forced to shutdown", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	a.db.Close()
+
+	a.logger.Info("Server exiting. Goodbye!")
 }
 
 func (a *App) InitRoutes() {
@@ -72,40 +125,7 @@ func (a *App) InitRoutes() {
 		driverRoutes.POST("/:id/complete", ridesHandler.CompleteRide)
 	}
 
+	a.r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	a.logger.Info("All routes created")
-}
-
-func (a *App) Run() {
-	a.InitRoutes()
-
-	srv := &http.Server{
-		Addr:    ":" + a.cfg.Server.Port,
-		Handler: a.r,
-	}
-
-	go func() {
-		a.logger.Info("Running server", slog.String("port", a.cfg.Server.Port))
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.logger.Info("Failed to run server", slog.String("error", err.Error()))
-			os.Exit(1)
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
-	<-quit
-
-	a.logger.Info("Shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		a.logger.Info("Server forced to shutdown", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-
-	a.db.Close()
-
-	a.logger.Info("Server exiting. Goodbye!")
 }

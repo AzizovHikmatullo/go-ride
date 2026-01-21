@@ -1,0 +1,458 @@
+basePath: /
+definitions:
+  auth.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  auth.IDResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+  auth.LoginReqBody:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  auth.LogoutReqBody:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  auth.RegisterReqBody:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  auth.StatusResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  auth.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  rides.ChangeRideResponse:
+    properties:
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+  rides.CreateRequest:
+    properties:
+      end_point:
+        $ref: '#/definitions/rides.PointGeoJSON'
+      start_point:
+        $ref: '#/definitions/rides.PointGeoJSON'
+    type: object
+  rides.CreateResponseSwagger:
+    properties:
+      id:
+        type: integer
+      route:
+        additionalProperties: true
+        type: object
+      status:
+        type: string
+    type: object
+  rides.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  rides.PointGeoJSON:
+    properties:
+      coordinates:
+        items:
+          type: number
+        type: array
+      type:
+        type: string
+    type: object
+  rides.RideSwagger:
+    properties:
+      created_at:
+        type: string
+      driver_id:
+        type: integer
+      end_point:
+        additionalProperties: true
+        type: object
+      id:
+        type: integer
+      route:
+        additionalProperties: true
+        type: object
+      start_point:
+        additionalProperties: true
+        type: object
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  rides.SearchRidesResponseSwagger:
+    properties:
+      rides:
+        items:
+          $ref: '#/definitions/rides.RideSwagger'
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Server for Go-Ride
+  title: Go-Ride API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return access + refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.ErrorResponse'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Delete refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LogoutReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.ErrorResponse'
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate new tokens
+      parameters:
+      - description: Old refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LogoutReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.TokenResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/auth.ErrorResponse'
+      summary: Refresh JWT tokens
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User registration info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.IDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.ErrorResponse'
+      summary: Register new user
+      tags:
+      - auth
+  /rides:
+    post:
+      consumes:
+      - application/json
+      description: Create a new ride with start and end points
+      parameters:
+      - description: Ride start/end points
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/rides.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rides.CreateResponseSwagger'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Create a new ride
+      tags:
+      - rides
+  /rides/{id}:
+    get:
+      description: Get ride information by ID
+      parameters:
+      - description: Ride ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rides.RideSwagger'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Get ride by ID
+      tags:
+      - rides
+  /rides/{id}/cancel:
+    post:
+      description: Cancel a ride
+      parameters:
+      - description: Ride ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rides.ChangeRideResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Cancel a ride
+      tags:
+      - rides
+  /rides/{id}/complete:
+    post:
+      description: Driver comptete a ride
+      parameters:
+      - description: Ride ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rides.ChangeRideResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - DriverAuth: []
+      summary: Complete a ride
+      tags:
+      - rides
+  /rides/{id}/status:
+    get:
+      description: Get current status of a ride
+      parameters:
+      - description: Ride ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Get ride status
+      tags:
+      - rides
+  /rides/{id}/take:
+    post:
+      description: Driver takes a ride
+      parameters:
+      - description: Ride ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rides.ChangeRideResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - DriverAuth: []
+      summary: Take a ride
+      tags:
+      - rides
+  /rides/searching:
+    get:
+      description: Get all rides with status "searching"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rides.SearchRidesResponseSwagger'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rides.ErrorResponse'
+      security:
+      - DriverAuth: []
+      summary: Get searching rides
+      tags:
+      - rides
+securityDefinitions:
+  DriverAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+  UserAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
