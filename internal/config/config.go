@@ -37,11 +37,11 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
 
-	cfg.Database.Host = os.Getenv("DB_HOST")
-	cfg.Database.Port = os.Getenv("DB_PORT")
-	cfg.Database.DBName = os.Getenv("DB_DBNAME")
-	cfg.Database.User = os.Getenv("DB_USERNAME")
-	cfg.Database.Password = os.Getenv("DB_PASSWORD")
+	cfg.Database.Host = os.Getenv("POSTGRES_HOST")
+	cfg.Database.Port = os.Getenv("POSTGRES_PORT")
+	cfg.Database.DBName = os.Getenv("POSTGRES_DB")
+	cfg.Database.User = os.Getenv("POSTGRES_USER")
+	cfg.Database.Password = os.Getenv("POSTGRES_PASSWORD")
 
 	cfg.JWT.Secret = os.Getenv("JWT_SECRET")
 
